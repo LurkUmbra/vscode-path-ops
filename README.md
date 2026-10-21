@@ -1,6 +1,22 @@
+
 # Path Ops
 
 A VS Code extension that handles **path browsing, file opening, file & folder creation, and `rm` / `mv` / `cp` / `mkdir`** — all from a single input box with live path suggestions.
+
+## Installation
+
+Since this extension is distributed manually, you can install it via the `.vsix` file:
+
+1. Download the latest `path-ops-0.0.1.vsix` from the [Releases](https://github.com/LurkUmbra/vscode-path-ops/releases) page.
+2. Open VS Code.
+3. Go to the Extensions view (`Ctrl+Shift+X`).
+4. Click the `...` (More Actions) menu in the top-right corner of the Extensions view.
+5. Select **Install from VSIX...** and choose the downloaded file.
+
+Alternatively, use the command line:
+```bash
+code --install-extension path-ops-0.0.1.vsix
+```
 
 ## Features
 
@@ -71,3 +87,6 @@ npx vsce package
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+
+(End of file - total 74 lines)
