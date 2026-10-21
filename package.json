@@ -1,0 +1,59 @@
+{
+  "name": "path-ops",
+  "displayName": "Path Ops",
+  "description": "Path browsing, file & folder creation, and rm/mv/cp/mkdir commands with live suggestions.",
+  "version": "0.0.1",
+  "publisher": "LurkUmbra",
+  "author": "LurkUmbra",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LurkUmbra/vscode-path-ops"
+  },
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Other"],
+  "keywords": ["file", "path", "mkdir", "copy", "move", "explorer"],
+  "activationEvents": ["onCommand:pathOps.run"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "pathOps.run",
+        "title": "Run file operation",
+        "category": "Path Ops"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "pathOps.run",
+        "key": "ctrl+n",
+        "mac": "cmd+n"
+      }
+    ],
+    "configuration": {
+      "title": "Path Ops",
+      "properties": {
+        "pathOps.revealExplorer": {
+          "type": "boolean",
+          "default": true,
+          "description": "When opening Path Ops, automatically reveal and focus the File Explorer sidebar."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "overrides": {
+    "cheerio": "1.0.0-rc.12"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "2.15.0"
+  }
+}
