@@ -22,6 +22,7 @@ code --install-extension path-ops-0.0.1.vsix
 
 - **Unified Command Palette**: Browse paths, create files/folders, and execute file operations in one place.
 - **Live Path Suggestions**: As you type, matching files and folders are displayed instantly.
+- **Workspace Search**: Typing a keyword without a path separator triggers a recursive search across the workspace. Matching files and folders are grouped under a `Workspace search` section, and build or dependency directories are excluded.
 - **Command Mode**: Type `rm`, `mv`, `cp`, or `mkdir` followed by paths to manipulate files.
 - **Smart Context**: Remembers your last browsed directory as the working base.
 - **Safety Guards**: Blocks infinite recursion (e.g., `cp src src`), ambiguous file/folder overwrites, and non-existent sources.
@@ -36,6 +37,7 @@ Press `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) and run **`Path Ops: Run file oper
 - **Browse**: Use `↑/↓` to navigate. `Enter` enters a folder or opens a file.
 - **Create**: Type a name that does not exist. Pressing `Enter` on the `Create` item creates a folder (no extension) or a file (with extension).
 - **Jump**: Type absolute paths (e.g., `D:/`) or `~/` to escape the workspace.
+- **Search**: Type a keyword without `/`. Matching file and folder names are collected recursively from the workspace root. If the result list is truncated, refine the keyword.
 
 ### Command Mode
 
