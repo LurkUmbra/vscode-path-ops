@@ -53,6 +53,53 @@ function iconFor(name: string, isDir: boolean): string {
   return '$(file)';
 }
 
+const SEARCH_IGNORE = new Set([
+  'node_modules', '.git', '.hg', '.svn', '.vscode-test',
+  'out', 'dist', 'build', '.next', '.nuxt', 'coverage',
+  'target', '__pycache__', '.venv', 'venv', '.idea',
+]);
+
+interface SearchHit { fullPath: string; name: string; isDir: boolean; }
+
+async function searchWorkspace(
+  root: string,
+  query: string,
+  maxResults: number,
+  maxVisited = 20000,
+): Promise<{ hits: SearchHit[]; truncated: boolean }> {
+  const q = query.toLowerCase();
+  const hits: SearchHit[] = [];
+  const queue: string[] = [root];
+  let head = 0;
+  let visited = 0;
+  let truncated = false;
+
+  while (head < queue.length) {
+    const dir = queue[head++];
+    let entries: fs.Dirent[];
+    try {
+      entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const e of entries) {
+      if (++visited > maxVisited) { truncated = true; break; }
+      if (e.isSymbolicLink()) continue;
+      const isDir = e.isDirectory();
+      if (isDir && SEARCH_IGNORE.has(e.name)) continue;
+      const full = path.join(dir, e.name);
+      if (e.name.toLowerCase().includes(q)) {
+        hits.push({ fullPath: full, name: e.name, isDir });
+        if (hits.length >= maxResults) { truncated = true; break; }
+      }
+      if (isDir) queue.push(full);
+    }
+    if (truncated) break;
+  }
+  return { hits, truncated };
+}
+
 export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand('pathOps.run', async () => {
     const config = vscode.workspace.getConfiguration('pathOps');
@@ -179,7 +226,10 @@ export function activate(context: vscode.ExtensionContext) {
       return n >= requiredArgs(ctx.command);
     };
 
+    let refreshToken = 0;
+
     const refresh = async () => {
+      const token = ++refreshToken;
       const ctx = parseValue(qp.value);
 
       // 空输入或命令模式：基准跟随最后浏览的目录
@@ -303,6 +353,40 @@ export function activate(context: vscode.ExtensionContext) {
         });
       }
 
+      // Recursive workspace search (type-to-search across the whole workspace)
+      let searchHits: SearchHit[] = [];
+      let searchTruncated = false;
+      if (!ctx.dirPart && ctx.prefix.length >= 1) {
+        const searchRoot = workspaceRoot || baseAnchor;
+        const res = await searchWorkspace(searchRoot, ctx.prefix, 40);
+        searchTruncated = res.truncated;
+        const localSet = new Set(matched.map(m => path.resolve(path.join(absDir, m.name))));
+        searchHits = res.hits.filter(h => {
+          if (inDestPhase && !h.isDir) return false;
+          return !localSet.has(path.resolve(h.fullPath));
+        });
+        if (searchHits.length > 0) {
+          items.push({ label: 'Workspace search', kind: vscode.QuickPickItemKind.Separator });
+          for (const h of searchHits) {
+            items.push({
+              label: iconFor(h.name, h.isDir) + ' ' + h.name + (h.isDir ? '/' : ''),
+              description: getDisplayPath(h.fullPath),
+              fullPath: h.fullPath,
+              isDirectory: h.isDir,
+              isFile: !h.isDir,
+              alwaysShow: true,
+            });
+          }
+          if (searchTruncated) {
+            items.push({
+              label: '$(info) More results available - refine your query',
+              isInvalid: true,
+              alwaysShow: true,
+            });
+          }
+        }
+      }
+
       if (!currentExists && ctx.prefix) {
         if (inDestPhase && sourceIsDir) {
           items.push({
@@ -314,12 +398,14 @@ export function activate(context: vscode.ExtensionContext) {
           });
         } else if (matched.length === 0) {
           if (inSourcePhase || isDeletion) {
-            items.push({
-              label: '$(warning) File or folder not found',
-              description: ctx.prefix,
-              isInvalid: true,
-              alwaysShow: true,
-            });
+            if (searchHits.length === 0) {
+              items.push({
+                label: '$(warning) File or folder not found',
+                description: ctx.prefix,
+                isInvalid: true,
+                alwaysShow: true,
+              });
+            }
           } else {
             items.push({
               label: '$(new-folder) Create: ' + ctx.prefix,
@@ -346,6 +432,7 @@ export function activate(context: vscode.ExtensionContext) {
       const rootPath = path.parse(absDir).root;
       items.push({ label: '$(root-folder) ' + toSlash(rootPath), isRoot: true, fullPath: rootPath, alwaysShow: true });
 
+      if (token !== refreshToken) return;
       isUpdating = true;
       qp.items = items;
       isUpdating = false;
